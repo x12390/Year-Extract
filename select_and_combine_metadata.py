@@ -39,6 +39,7 @@ def select_meta_cols(input_path, output_path='tmp//selected_combined_meta_cols.c
         )
     )
 
+    logger.info("Combining columns after id column.")
     # Combine alle Spalten außer 'id' sauber
     new_df['combined'] = new_df[cols_to_clean].apply(
         lambda row: ' '.join([x for x in row if x.strip() != ""]), axis=1

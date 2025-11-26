@@ -19,7 +19,7 @@ def split_csv_by_size(input_path, output_dir, max_rows=1000):
     if not max_rows:  # None, 0 or False → no splitting
         output_path = os.path.join(output_dir, f"part_1.csv")
         shutil.copy2(input_path, output_path)
-        print(f"File copied unchanged to: {output_path}")
+        print(f"Splitter: File copied unchanged to: {output_path}")
         return
 
     # --- Case 2: Splitting mode ---------------------------------------------
@@ -30,7 +30,7 @@ def split_csv_by_size(input_path, output_dir, max_rows=1000):
         current_file = os.path.join(output_dir, f"part_{part}.csv")
         chunk.to_csv(current_file, index=False)
         size_mb = os.path.getsize(current_file) / 1024 / 1024
-        print(f"File '{current_file}' written ({size_mb:.2f} MB)")
+        print(f"Splitter: File '{current_file}' written ({size_mb:.2f} MB)")
         part += 1
 
     print("Splitting finished.")

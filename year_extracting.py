@@ -1,61 +1,70 @@
 import pandas as pd
 import re
 import os
+import asyncio
+import logging
+import aiohttp
+import config
 
+from prompt_lmstudio import set_prompt_text
+from get_latest_year import extract_latest_year
 
+logger = logging.getLogger(__name__)
 
-# Function to extract the latest year from text
-def extract_latest_year(text):
+def is_valid_year(year):
+    try:
+        y = int(year)
+        return 1900 <= y <= 2100
+    except (TypeError, ValueError):
+        return False
 
-    if pd.isna(text):
-        print("Ist kein Text.")
-        return "na"
+# ASYNCHRON VERSION
+async def extracting_year_and_write_csv(session, df):
+    # RULE BASED SEARCH
+    df['year'] = df['combined'].apply(extract_latest_year).astype("string")
 
-    text = str(text)
+    df_remaining = df[df['year'] == ""].copy().astype("string")
+    df_done = df[df['year'] != ""].copy().astype("string")
+    df_done["origin"] = "RULE"
 
+    logger.info(f"Processing {len(df)} by rules: {len(df_done)} done, {len(df_remaining)} remaining.")
 
-    # Regex:
-    # - Jahreszahlen: 2010, 2025 (nicht direkt nach "WE ")
-    # - Quartalsangaben: Q1/25 oder Q1/2025
-    # Negative Lookbehind: (?<!WE\s) verhindert Treffer nach "WE "
-    pattern = r"(?<!WE\s)\b(?:19|20)\d{2}\b|\bQ[1-4]/\d{2,4}\b"
-    matches = re.findall(pattern, text)
+    # AI SEARCH - PROCESS IF RULE BASED SEARCH DID NOT FIND A YEAR
+    if config.ENABLE_AI_PROCESS:
+        years = []
+        total = len(df_remaining)
+        logger.info(f"Processing remaing {len(df_remaining)} with AI.")
 
-    years = []
-    for m in matches:
-        if m.startswith("Q"):
-            # Quartalsangabe -> Jahr ergänzen
-            part = m.split("/")[1]
-            if len(part) == 2:  # z.B. '25' -> '2025'
-                year = "20" + part
-            else:  # z.B. '2025'
-                year = part
+        for idx, text in enumerate(df_remaining['combined'], start=1):
+            year = await set_prompt_text(session, text)
+
             years.append(year)
-        else:
-            years.append(m)
 
-    if years:
-        #print(years)
-        max_year = max(years)
-        #print(f"Choice: {max_year}")  # ['2025', '2025', '2010', '2025']
-        if max_year:
-            if int(max_year) < 1980:
-                print(f"{max_year} => {years}")
+            # Fortschritt ausgeben mit flush
+            if idx % 10 == 0 or idx == total:
+                logger.info(f"Processed by AI: {idx}/{total} rows ({idx / total * 100:.1f}%)")
 
-        return max_year
-    else:
-        return "na"
+        df_remaining['year'] = years
+
+        df_remaining["year"] = (
+            df_remaining["year"]
+            .astype(str)  # falls None oder andere Typen
+            .str.extract(r"(\d{4})")[0]  # extrahiert 4-stellige Zahl oder NaN
+            .fillna(config.NOT_FOUND_RETURN_VALUE)  # ersetzt alle NaN durch leeren String
+        )
+
+        df_remaining["year"] = df_remaining["year"].apply(lambda y: y if is_valid_year(y) else "0")
+        df_remaining["year"] = df_remaining["year"].astype("string")
+        df_remaining["origin"] = "AI"
 
 
-def extracting_year_and_write_csv(df, output_dir):
-    # Apply function
-    df['year'] = df['combined'].apply(extract_latest_year)
 
-    # Output CSV
-    output_df = df[['id', 'year']]
-    output_file = os.path.join(output_dir, "id_year_extracted.csv")
-    output_df.to_csv(output_file, index=False)
-    return output_file
+    #concat all df results for csv output
+    df_merged = pd.concat([df_done, df_remaining], ignore_index=True).drop_duplicates()
+    return df_merged
+
+if __name__=="__main__":
+    print(is_valid_year("0007"))
 
 
 

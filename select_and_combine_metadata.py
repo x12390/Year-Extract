@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 import config
-from split_csv_file import split_csv_by_size
+
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +60,6 @@ def select_meta_cols(input_path, output_path='tmp//selected_combined_meta_cols.c
     #create csv it activated
     if create_csv:
         combined_df.to_csv(output_path, index=False, escapechar='\\', quoting=None)
-
-    logger.info(f"splitting meta file in multiple files: max_rows {config.CSV_SPILT_FILE_ROWS}")
-    split_csv_by_size(output_path, "csv_parts", max_rows=config.CSV_SPILT_FILE_ROWS)
 
     return output_path
 

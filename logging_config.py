@@ -2,11 +2,18 @@ import os
 import logging
 import sys
 
+class FlushingStreamHandler(logging.StreamHandler):
+    """StreamHandler that flushes after every log message"""
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
+
 def setup_logging(log_dir="logs", log_file="app.log", level=logging.INFO):
     """
     Sets up centralized logging configuration with:
     - File logging
-    - Console logging
+    - Console logging with auto-flush
     """
 
     os.makedirs(log_dir, exist_ok=True)
@@ -16,7 +23,7 @@ def setup_logging(log_dir="logs", log_file="app.log", level=logging.INFO):
     logger = logging.getLogger()
     logger.setLevel(level)
 
-    # Prevent adding handlers multiple times (important in notebooks or repeated calls)
+    # Prevent adding handlers multiple times
     if logger.handlers:
         return logger
 
@@ -31,8 +38,8 @@ def setup_logging(log_dir="logs", log_file="app.log", level=logging.INFO):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # --- Console Handler ---
-    console_handler = logging.StreamHandler(sys.stdout)
+    # --- Console Handler with Auto-Flush ---
+    console_handler = FlushingStreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
@@ -42,3 +49,4 @@ def setup_logging(log_dir="logs", log_file="app.log", level=logging.INFO):
 if __name__ == "__main__":
     setup_logging()
     logging.warning("Logging test started.")
+    logging.info("This will appear immediately!")

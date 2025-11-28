@@ -15,7 +15,7 @@ from console_prompt import ask_yes_no
 from select_and_combine_metadata import select_meta_cols
 from logging_config import setup_logging
 from year_extracting import extracting_year_and_write_csv
-from split_csv_file import split_csv_by_size
+from csv_file_operations import split_csv_by_size
 
 setup_logging(log_file="app.log")
 logger = logging.getLogger(__name__)
@@ -29,6 +29,9 @@ def cleanup_and_ensure_folder():
 
     # ensure processed directory exists
     os.makedirs("processed", exist_ok=True)
+
+    # ensure processed directory exists
+    os.makedirs(config.SHIPPING_DIR, exist_ok=True)
 
     # ensure output directory exists
     if config.CLEAN_OUTPUT_FOLDER_AT_STARTUP:

@@ -103,9 +103,9 @@ async def main_async():
             df_years = await extracting_year_and_write_csv(session, df)
 
             #write output csv
-            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             name_part = os.path.splitext(filename)[0]
-            output_file_name = f"{timestamp_str}_extracted_years_{name_part}.csv"
+            output_file_name = f"{timestamp}_extracted_years_{name_part}.csv"
             output_file_path = os.path.join(config.OUTPUT_DIR, output_file_name)
 
             await asyncio.to_thread(df_years[['id', 'year', 'origin']].astype(str).to_csv, output_file_path, index=False)
